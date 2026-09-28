@@ -1,18 +1,21 @@
 # Update Platform Demo Sales — hanya berkas yang berubah
 
-Versi: `main` @ `1521741` (setelah perbaikan lisensi dicabut → ajukan lisensi baru).
+Versi: `main` @ `5f58a6b` (perbaikan lisensi dicabut + animasi pindah halaman).
 
 ## Isi paket
 
 | Berkas | Untuk |
 |---|---|
-| `perubahan-saja.zip` | **Hanya 6 berkas yang berubah**, susunan foldernya sama dengan repo. Ini yang dipakai. |
+| `perubahan-saja.zip` | **Hanya 9 berkas yang berubah**, susunan foldernya sama dengan repo. Ini yang dipakai. |
 | `sales-management-platform-lengkap.zip` | Seluruh kode versi terbaru — cadangan bila repo demo ingin disamakan total. |
 
 Berkas yang berubah:
 
 ```
 app/(app)/admin/_components/TabLisensi.tsx   ← lisensi dicabut → form Ajukan lisensi baru + Trial
+components/shared/ProgresNavigasi.tsx        ← BARU: bilah progres pindah halaman
+components/shared/Shell.tsx                  ← animasi masuk halaman + memuat yang halus
+app/globals.css                              ← gaya animasi
 lib/lisensi/server.ts                        ← pengajuan dibuka lagi setelah dicabut, pesan error jelas
 supabase/SETUP_LENGKAP.sql                   ← BARU: 1 berkas SQL untuk Supabase baru (tidak perlu di demo)
 scripts/gabung-migrasi.mjs                   ← BARU: pembuat berkas SQL di atas
@@ -42,8 +45,8 @@ cd <repo-demo>
 git pull
 ```
 
-**2. Salin berkas perubahan.** Ekstrak `perubahan-saja.zip`, lalu salin **isinya** (`app`, `lib`, `scripts`,
-`supabase`, `package.json`, `README.md`) ke folder repo → pilih **Replace / Timpa** bila ditanya.
+**2. Salin berkas perubahan.** Ekstrak `perubahan-saja.zip`, lalu salin **isinya** (`app`, `components`, `lib`,
+`scripts`, `supabase`, `package.json`, `README.md`) ke folder repo → pilih **Replace / Timpa** bila ditanya.
 Berkas lain di folder repo tidak ikut terhapus.
 
 **3. Periksa apa yang berubah:**
@@ -52,13 +55,13 @@ Berkas lain di folder repo tidak ikut terhapus.
 git status
 ```
 
-Harus muncul kurang lebih 6 berkas (merah). Bila muncul ratusan berkas, berarti salah folder — jangan lanjut.
+Harus muncul kurang lebih 9 berkas (merah). Bila muncul ratusan berkas, berarti salah folder — jangan lanjut.
 
 **4. Kirim ke GitHub:**
 
 ```
 git add -A
-git commit -m "Perbaikan lisensi: dicabut -> ajukan lisensi baru + SQL setup tunggal"
+git commit -m "Perbaikan lisensi dicabut + animasi pindah halaman"
 git push
 ```
 
@@ -83,8 +86,8 @@ Untuk tiap berkas yang berubah:
    (mis. `app` → `(app)` → `admin` → `_components`).
 2. **Add file → Upload files** → seret berkas dari hasil ekstrak `perubahan-saja.zip` yang namanya sama
    (mis. `TabLisensi.tsx`) → **Commit changes**. Berkas lama otomatis tertimpa.
-3. Ulangi untuk: `lib/lisensi/server.ts`, `package.json`, `README.md`,
-   `scripts/gabung-migrasi.mjs`, `supabase/SETUP_LENGKAP.sql`.
+3. Ulangi untuk: `lib/lisensi/server.ts`, `components/shared/Shell.tsx`, `components/shared/ProgresNavigasi.tsx`,
+   `app/globals.css`, `package.json`, `README.md`, `scripts/gabung-migrasi.mjs`, `supabase/SETUP_LENGKAP.sql`.
 
 Cara B lebih lambat dan tiap berkas memicu deploy sendiri — wajar; yang dipakai adalah deploy terakhir.
 
