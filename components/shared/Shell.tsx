@@ -11,6 +11,7 @@ import { LayarMemuat, Kosong } from './Feedback';
 import { Kolom, KataSandi, Tombol } from './FormParts';
 import { LABEL_PERAN, type Peran } from '@/lib/constants';
 import { useMenuSaya, type MenuKey } from '@/lib/menu-akses';
+import { bukaProfil } from '@/lib/buka-profil';
 import { useBranding } from '@/lib/branding';
 import { ambilLisensi, useLisensi, type Lisensi } from '@/lib/lisensi/use-lisensi';
 import { FITUR_MENU, pesanKode } from '@/lib/lisensi/kontrak';
@@ -167,7 +168,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           {/* Ruang bawah menghindari bilah navigasi ponsel menutupi isi
               halaman — termasuk tombol simpan di dasar formulir. */}
           <main aria-busy={sedangNavigasi}
-            className="relative flex-1 px-3 sm:px-5 py-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sidebar:pb-6 max-w-[1500px] w-full mx-auto">
+            className="relative flex-1 px-3 sm:px-5 py-4 pb-6 max-w-[1500px] w-full mx-auto">
             <div className={`transition-[opacity,filter] duration-200 ${sedangNavigasi ? 'opacity-50 saturate-50 pointer-events-none select-none' : ''}`}>
               <BannerLisensi lisensi={lisensi} admin={pengguna.role.toUpperCase() === 'ADMIN'} />
               {/* key = pathname: setiap pindah halaman, isi baru masuk dengan animasi. */}
@@ -189,9 +190,46 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
+      <KakiHalaman namaPlatform={branding.nama_platform} />
+
       <BilahBawah menu={menuPonsel} lainnya={menuLainnya} pathname={pathname} />
     </div>
     </KonteksBagian.Provider>
+  );
+}
+
+/**
+ * Footer: hak cipta + pembuat di kiri, identitas build di kanan (versi ·
+ * commit · waktu build) — supaya saat ada laporan masalah, jelas versi mana
+ * yang sedang dipakai. Nama platform mengikuti Branding tiap server.
+ * Ruang bawah di ponsel menghindari bilah navigasi bawah menutupinya.
+ */
+function KakiHalaman({ namaPlatform }: { namaPlatform: string }) {
+  const versi = process.env.NEXT_PUBLIC_VERSI;
+  const commit = process.env.NEXT_PUBLIC_COMMIT;
+  const waktu = process.env.NEXT_PUBLIC_WAKTU_BUILD;
+  const waktuBuild = waktu
+    ? new Intl.DateTimeFormat('id-ID', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        timeZone: 'Asia/Jakarta',
+      }).format(new Date(waktu))
+    : null;
+
+  return (
+    <footer className="border-t border-slate-200 bg-white/70 px-4 sm:px-5 pt-2.5
+                       pb-[calc(4.5rem+env(safe-area-inset-bottom))] sidebar:pb-2.5
+                       flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+      <p className="text-[11px] text-slate-500">
+        © {new Date().getFullYear()} {namaPlatform}
+        <span className="text-slate-400"> · Created by DWP</span>
+      </p>
+      <p className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-0.5
+                    text-[10.5px] font-medium text-slate-500 tabular-nums">
+        {versi && <span>v{versi}</span>}
+        {commit && <><span aria-hidden="true" className="text-slate-300">·</span><span className="font-mono">{commit}</span></>}
+        {waktuBuild && <><span aria-hidden="true" className="text-slate-300">·</span><span>{waktuBuild}</span></>}
+      </p>
+    </footer>
   );
 }
 
@@ -449,9 +487,9 @@ function KartuPengguna({ pengguna }: { pengguna: PenggunaAktif }) {
 
   return (
     <div className="px-2.5 py-3 border-t border-slate-100">
-      <Link
-        href="/profil"
-        className="flex items-center gap-2.5 px-2 py-2 rounded-kontrol hover:bg-slate-50 transition-colors"
+      <button
+        type="button" onClick={bukaProfil}
+        className="w-full text-left flex items-center gap-2.5 px-2 py-2 rounded-kontrol hover:bg-slate-50 transition-colors"
       >
         <Inisial nama={pengguna.full_name} />
         <div className="min-w-0 flex-1">
@@ -460,7 +498,7 @@ function KartuPengguna({ pengguna }: { pengguna: PenggunaAktif }) {
             {LABEL_PERAN[(pengguna.role as Peran)] ?? pengguna.role}
           </p>
         </div>
-      </Link>
+      </button>
       <button
         type="button" onClick={lakukanKeluar} disabled={keluarBerjalan}
         className="w-full mt-1 px-3 py-2 rounded-kontrol text-[12px] font-semibold text-slate-500 hover:bg-slate-50 hover:text-[#e34948] transition-colors text-left disabled:opacity-50"

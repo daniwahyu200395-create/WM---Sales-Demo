@@ -12,7 +12,7 @@ import { createPortal } from 'react-dom';
  * terpotong atau posisinya melenceng dari tengah layar.
  */
 export function Modal({
-  buka, onTutup, judul, keterangan, children, kaki, lebar = 'sedang',
+  buka, onTutup, judul, keterangan, children, kaki, lebar = 'sedang', polos, blur,
 }: {
   buka: boolean;
   onTutup: () => void;
@@ -20,7 +20,12 @@ export function Modal({
   keterangan?: string;
   children: React.ReactNode;
   kaki?: React.ReactNode;
-  lebar?: 'kecil' | 'sedang' | 'lebar';
+  lebar?: 'kecil' | 'sedang' | 'lebar' | 'penuh';
+  /** Tanpa kepala & tanpa padding — isinya menggambar kepalanya sendiri
+   *  (mis. spanduk Profil). `judul` tetap dipakai sebagai aria-label. */
+  polos?: boolean;
+  /** Halaman di belakang dikaburkan kuat, bukan sekadar diredupkan. */
+  blur?: boolean;
 }) {
   const [terpasang, setTerpasang] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -75,15 +80,15 @@ export function Modal({
 
   if (!terpasang || !buka) return null;
 
-  const LEBAR = { kecil: 'max-w-sm', sedang: 'max-w-lg', lebar: 'max-w-3xl' }[lebar];
+  const LEBAR = { kecil: 'max-w-sm', sedang: 'max-w-lg', lebar: 'max-w-3xl', penuh: 'max-w-6xl' }[lebar];
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 ${polos ? 'sm:p-3' : 'sm:p-4'}`}
       role="dialog" aria-modal="true" aria-label={judul}
     >
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]"
+        className={`absolute inset-0 animate-[pudar_.2s_ease-out] ${blur ? 'bg-slate-950/55 backdrop-blur-[6px]' : 'bg-slate-900/50 backdrop-blur-[2px]'}`}
         onClick={onTutup}
         aria-hidden="true"
       />
@@ -91,11 +96,11 @@ export function Modal({
         ref={panelRef}
         tabIndex={-1}
         className={`relative w-full ${LEBAR} bg-white shadow-modal outline-none
-                    rounded-t-panel sm:rounded-kartu
-                    max-h-[92vh] sm:max-h-[85vh] flex flex-col
+                    rounded-t-panel sm:rounded-kartu flex flex-col
+                    ${polos ? 'overflow-hidden max-h-[94dvh] sm:max-h-[calc(100dvh-1.5rem)]' : 'max-h-[92vh] sm:max-h-[85vh]'}
                     animate-[naik_.22s_cubic-bezier(.22,1,.36,1)]`}
       >
-        <header className="flex items-start gap-3 px-5 pt-5 pb-3 flex-shrink-0 border-b border-slate-100">
+        {!polos && <header className="flex items-start gap-3 px-5 pt-5 pb-3 flex-shrink-0 border-b border-slate-100">
           <div className="flex-1 min-w-0">
             <h2 className="text-base font-bold text-slate-900 leading-snug">{judul}</h2>
             {keterangan && <p className="text-[12px] text-slate-500 mt-0.5 leading-snug">{keterangan}</p>}
@@ -108,9 +113,10 @@ export function Modal({
               <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
-        </header>
+        </header>}
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">{children}</div>
+        {/* Polos: isinya mengatur guliran sendiri (mis. spanduk tetap, isi bergulir). */}
+        <div className={`flex-1 min-h-0 ${polos ? 'flex flex-col' : 'overflow-y-auto px-5 py-4'}`}>{children}</div>
 
         {kaki && (
           <footer className="flex-shrink-0 px-5 py-4 border-t border-slate-100 flex items-center justify-end gap-2
