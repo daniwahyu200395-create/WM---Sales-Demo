@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+   * Palet aksen sebagai variabel CSS (format "R G B", bukan hex, supaya
+   * Tailwind bisa menyisipkan alpha lewat rgb(var(--x) / <alpha>)).
+   *
+   * Nilai di sini adalah BAWAAN — biru profesional yang sama seperti
+   * sebelumnya. Saat admin mengubah warna di Administrasi → Tampilan,
+   * lib/branding.ts menimpanya di document.documentElement, sehingga
+   * seluruh kelas aksen-* ikut berubah tanpa satu komponen pun disentuh.
+   */
+  :root {
+    color-scheme: light;
+
+    --aksen-50:  239 246 255;
+    --aksen-100: 219 234 254;
+    --aksen-200: 191 219 254;
+    --aksen-300: 147 197 253;
+    --aksen-400: 96 165 250;
+    --aksen-500: 59 130 246;
+    --aksen-600: 37 99 235;
+    --aksen-700: 29 78 216;
+    --aksen-800: 30 64 175;
+    --aksen-900: 30 58 138;
+    --merek-aksen: 237 161 0;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-slate-100 text-slate-800 antialiased;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+                 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /*
+   * Penjagaan tipografi menyeluruh — pelajaran dari judul halaman masuk yang
+   * pecah buruk.
+   *
+   * 1. overflow-wrap: kata panjang tanpa spasi (nama proyek, alamat surel,
+   *    URL, atau kata berimbuhan macam "dipertanggungjawabkan") dipenggal
+   *    alih-alih menjebol lebar kartunya. Ini hanya bekerja ketika katanya
+   *    memang tidak muat — kata yang muat tidak akan ikut terpenggal.
+   * 2. text-wrap: balance pada judul membuat peramban membagi barisnya rata,
+   *    sehingga tidak ada baris terakhir berisi satu kata sebatang kara.
+   * 3. text-wrap: pretty pada paragraf mencegah kata tunggal terdampar di
+   *    baris penutup.
+   *
+   * Ketiganya diterapkan di sini, sekali, supaya tidak perlu diingat ulang di
+   * setiap halaman baru.
+   */
+  body {
+    overflow-wrap: break-word;
+  }
+
+  /*
+   * Penjagaan lebar halaman.
+   *
+   * Satu saja elemen yang melebihi lebar layar — tabel dengan lebar minimum,
+   * kartu yang tidak bisa menyusut, deretan tombol yang terlalu panjang —
+   * membuat SELURUH halaman bisa digeser mendatar. Akibatnya bukan cuma
+   * elemen itu yang melenceng: sidebar dan bilah judul ikut tergeser, dan
+   * pemakainya melihat menu yang terpotong di tepi kiri tanpa tahu sebabnya.
+   * Kerangka aplikasi tidak boleh bergantung pada kedisiplinan setiap
+   * halaman.
+   *
+   * `clip`, BUKAN `hidden`. Keduanya sama-sama memotong, tapi `hidden`
+   * menjadikan body sebagai wadah gulir baru — dan itu mematikan seluruh
+   * `position: sticky` di dalamnya, termasuk bilah judul dan sidebar. `clip`
+   * memotong tanpa membuat wadah gulir, jadi sticky tetap hidup.
+   *
+   * Ini jaring pengaman, bukan izin untuk membuat halaman yang kelebaran:
+   * isi yang memang perlu digeser mendatar (tabel lebar) tetap harus
+   * membungkus dirinya sendiri dalam pembungkus overflow-x-auto.
+   */
+  body {
+    overflow-x: clip;
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Angka pada kartu KPI dan tabel dibuat selebar sama satu sama lain.
+     Tanpa ini, angka yang berubah saat data disegarkan menggeser lebar
+     teksnya sendiri dan kartunya terlihat bergoyang. */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Cincin fokus hanya untuk navigasi papan tombol, bukan untuk klik tetikus.
+     Ini yang dilakukan :focus-visible — sedangkan :focus polos membuat setiap
+     tombol yang diklik meninggalkan cincin yang mengganggu. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--aksen-600));
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Deretan lencana di header digulung mendatar di layar sempit. Bilah
+     gulirnya disembunyikan karena di sana ia menutupi lencana paling kanan —
+     kontennya tetap bisa digeser dengan jari maupun roda tetikus. */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /*
+   * Cetak GP Calculation — inilah "ekspor PDF"-nya.
+   *
+   * Tidak memakai pustaka PDF sama sekali, dan itu keputusan sadar: jsPDF dan
+   * sejenisnya menambah ratusan kilobyte ke bundel yang harus diunduh Sales di
+   * lapangan, hanya untuk menghasilkan tata letak yang sudah bisa dibuat
+   * peramban sendiri lewat "Simpan sebagai PDF" di dialog cetaknya.
+   *
+   * Caranya: seluruh halaman disembunyikan, lalu HANYA isi panel GP yang
+   * ditampilkan kembali. visibility dipakai, bukan display, supaya posisi
+   * elemen tidak dihitung ulang dan tata letak kolomnya tidak berantakan.
+   */
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+
+    .cetak-gp,
+    .cetak-gp * {
+      visibility: visible;
+    }
+
+    .cetak-gp {
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      padding: 0;
+    }
+
+    /* Kerangka modal — latar gelap, tombol tutup, dan kaki berisi tombol
+       aksi — tidak ikut tercetak. */
+    .cetak-gp {
+      overflow: visible !important;
+      max-height: none !important;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 12mm;
+    }
+  }
+
+  /*
+   * Sorotan baris yang dituju lencana header (lib/fokus.ts).
+   *
+   * Memakai warna aksen yang memudar, bukan warna tetap: halaman ini bisa
+   * berganti warna merek lewat Administrasi → Dashboard Setting, dan sorotan
+   * yang tetap biru di platform berwarna merah akan terlihat seperti cacat
+   * tampilan, bukan seperti penunjuk.
+   */
+  @keyframes sorot {
+    0%   { box-shadow: 0 0 0 0 rgb(var(--aksen-600) / 0.45); background-color: rgb(var(--aksen-50)); }
+    70%  { box-shadow: 0 0 0 10px rgb(var(--aksen-600) / 0); background-color: rgb(var(--aksen-50)); }
+    100% { box-shadow: 0 0 0 0 rgb(var(--aksen-600) / 0); background-color: transparent; }
+  }
+
+  .sorot-fokus {
+    animation: sorot 2.4s ease-out;
+    border-radius: 1rem;
+    scroll-margin-top: 5rem;
+  }
+
+  /* Bilah progres pindah menu (components/shared/ProgresNavigasi.tsx). */
+  @keyframes progres-jalan {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
+  }
+  .progres-jalan {
+    animation: progres-jalan 1.1s ease-in-out infinite;
+  }
+
+  @keyframes masuk {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes naik {
+    from { opacity: 0; transform: translateY(16px) scale(.98); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);   }
+  }
+
+  /* Pengguna yang menyetel "kurangi animasi" di sistemnya biasanya melakukannya
+     karena gerakan memicu pusing atau mual. Seluruh transisi dimatikan, bukan
+     diperlambat. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
+}

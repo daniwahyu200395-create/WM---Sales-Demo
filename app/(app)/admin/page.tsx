@@ -1,0 +1,137 @@
+'use client';
+
+import { Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { usePenggunaAktif } from '@/lib/auth';
+import { useLisensi } from '@/lib/lisensi/use-lisensi';
+import { isPengawas } from '@/lib/constants';
+import { bagianUntuk, BAGIAN_ADMIN, type KunciBagian } from '@/lib/admin-bagian';
+import { mulaiNavigasi } from '@/lib/navigasi-muat';
+import { LayarMemuat, Kosong } from '@/components/shared/Feedback';
+import { useBagianAdmin } from '@/components/shared/Shell';
+import { TabPengguna } from './_components/TabPengguna';
+import { TabPersetujuan } from './_components/TabPersetujuan';
+import { TabHakAkses } from './_components/TabHakAkses';
+import { TabLokasi } from './_components/TabLokasi';
+import { TabTarget } from './_components/TabTarget';
+import { TabStruktur } from './_components/TabStruktur';
+import { TabKonfigurasi } from './_components/TabKonfigurasi';
+import { TabTampilan } from './_components/TabTampilan';
+import { TabAudit } from './_components/TabAudit';
+import { TabLisensi } from './_components/TabLisensi';
+
+/**
+ * Admin Panel.
+ *
+ * Navigasinya TIDAK ada di halaman ini: daftar bagian tampil sebagai sub-menu
+ * di sidebar, menempel pada menu induknya (lihat SubMenuAdmin di Shell). Versi
+ * sebelumnya memasang panel navigasi gelap di dalam area isi, dan itu keliru —
+ * kotak navigasi yang mengambang di tengah halaman terbaca sebagai bagian dari
+ * isi, bukan sebagai navigasi, sehingga halaman tampak punya dua sidebar yang
+ * bersaing.
+ *
+ * Di ponsel sidebar-nya tidak ada, jadi di sana — dan hanya di sana — bagiannya
+ * tampil sebagai baris chip di atas isi.
+ *
+ * Manager sengaja dibiarkan masuk, tapi hanya melihat Lokasi dan Audit Log —
+ * keduanya memang wewenangnya (policy `lok_kelola` dan `audit_baca` di migrasi
+ * 005). Pengelolaan akun, identitas platform, dan nilai bisnis khusus Admin.
+ */
+export default function HalamanAdmin() {
+  // useSearchParams menuntut Suspense di Next 14 (halaman ini dirender statis).
+  return (
+    <Suspense fallback={<LayarMemuat />}>
+      <IsiAdmin />
+    </Suspense>
+  );
+}
+
+function IsiAdmin() {
+  const { pengguna, memuat } = usePenggunaAktif();
+  const { bagian, setBagian } = useBagianAdmin();
+  const { lisensi } = useLisensi();
+
+  // Tautan langsung ke satu bagian (banner & lonceng lisensi → /admin?bagian=lisensi).
+  // Bereaksi pada SETIAP perubahan URL — juga saat halaman ini sudah terbuka —
+  // lalu membersihkan parameternya supaya tautan yang sama bisa dipakai lagi.
+  const params = useSearchParams();
+  const router = useRouter();
+  const diminta = params.get('bagian');
+  useEffect(() => {
+    if (!diminta) return;
+    if (BAGIAN_ADMIN.some((b) => b.kunci === diminta)) setBagian(diminta as KunciBagian);
+    router.replace('/admin', { scroll: false });
+  }, [diminta, setBagian, router]);
+
+  if (memuat) return <LayarMemuat />;
+  if (!pengguna) return null;
+
+  if (!isPengawas(pengguna.role)) {
+    return (
+      <div className="bg-white rounded-kartu border border-slate-200 max-w-lg mx-auto mt-8">
+        <Kosong
+          judul="Halaman ini bukan untuk peran Anda"
+          keterangan="Admin Panel hanya terbuka untuk Manager dan Admin. Kalau Anda merasa ini keliru, hubungi Admin."
+        />
+      </div>
+    );
+  }
+
+  const tersedia = bagianUntuk(pengguna.role, lisensi?.fitur ?? null);
+  // Manager mendarat di bagian pertama yang memang boleh ia buka, bukan di
+  // "Pengguna" yang tidak ada dalam daftarnya.
+  const aktif = tersedia.find((b) => b.kunci === bagian) ?? tersedia[0];
+
+  return (
+    <div className="flex flex-col gap-4">
+
+      {/* Navigasi bagian untuk layar sempit; di layar lebar tugas ini
+          dipegang sub-menu sidebar. */}
+      <nav aria-label="Bagian Admin Panel"
+        className="sidebar:hidden flex gap-1.5 overflow-x-auto no-scrollbar bg-white rounded-kartu border border-slate-200 p-1.5">
+        {tersedia.map((b) => {
+          const ini = b.kunci === aktif.kunci;
+          return (
+            <button
+              key={b.kunci} type="button"
+              onClick={() => { if (!ini) mulaiNavigasi(null); setBagian(b.kunci); }}
+              aria-current={ini ? 'true' : undefined}
+              className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-kontrol
+                          text-[12px] font-semibold whitespace-nowrap transition-colors
+                          ${ini ? 'bg-aksen-700 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+            >
+              <span aria-hidden="true">{b.ikon}</span>
+              {b.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      <header className="flex items-center gap-3">
+        <span className="w-10 h-10 rounded-kontrol bg-aksen-50 border border-aksen-100 grid place-items-center text-[16px] flex-shrink-0"
+          aria-hidden="true">
+          {aktif.ikon}
+        </span>
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight">
+            {aktif.judul}
+          </h1>
+          <p className="text-[12px] text-slate-500 mt-0.5 leading-snug">{aktif.keterangan}</p>
+        </div>
+      </header>
+
+      <div>
+        {aktif.kunci === 'pengguna' && <TabPengguna pemanggilId={pengguna.id} />}
+        {aktif.kunci === 'struktur' && <TabStruktur />}
+        {aktif.kunci === 'persetujuan' && <TabPersetujuan />}
+        {aktif.kunci === 'hak_akses' && <TabHakAkses />}
+        {aktif.kunci === 'lokasi' && <TabLokasi />}
+        {aktif.kunci === 'target' && <TabTarget pemanggilId={pengguna.id} />}
+        {aktif.kunci === 'tampilan' && <TabTampilan />}
+        {aktif.kunci === 'konfigurasi' && <TabKonfigurasi />}
+        {aktif.kunci === 'lisensi' && <TabLisensi />}
+        {aktif.kunci === 'audit' && <TabAudit />}
+      </div>
+    </div>
+  );
+}
